@@ -1,9 +1,9 @@
 
-const Remittance = artifacts.require('Remittance.sol');
+const RockPaperScissors = artifacts.require('RockPaperScissors.sol');
 
 module.exports = async (deployer, network, accounts) => {
 
- await deployer.deploy(Remittance, 100);
+ await deployer.deploy(RockPaperScissors);
 
 };
 
