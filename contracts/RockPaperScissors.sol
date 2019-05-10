@@ -9,7 +9,7 @@ import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 ** -> Player2 join the game and provides secret move (playGame)
 ** -> each player reveal the move (revealGame), when the second player reveal the contract assign the rewards to the winner 
 ** -> each player can retrive its betAmount (withdraw)
-** -> if player2 doesn't play after expireBlock timeout the player1 can retrive the betAmount (claimGame)
+** -> if player2 doesn't play after expireBlock timeout the player1 can retrive the betAmount (cancelGame)
 */
 contract RockPaperScissors is Pausable {
     using SafeMath for uint256;
@@ -19,7 +19,7 @@ contract RockPaperScissors is Pausable {
     event LogGameJoined(address indexed player, bytes32 indexed gameHash, bytes32 moveHash);
     event LogGameRevealed(address indexed player, bytes32 indexed gameHash, GameMove move, uint256 winnerId);
     event LogWithdraw(address indexed player, uint256 amount);
-    event LogGameClaimed(address indexed player, bytes32 indexed gameHash, uint256 winnerId);
+    event LogGameCancelled(address indexed player, bytes32 indexed gameHash, uint256 winnerId);
 
     enum GameMove{
       NONE,
@@ -41,8 +41,13 @@ contract RockPaperScissors is Pausable {
 
     // contains the data associated to each game. Each game is indexed by gameHash
     mapping(bytes32 => GameData) public games;
+
     // balances indexed by user account
     mapping(address => uint256) public balances;
+
+    // Store the moveHash used by players */
+    mapping(bytes32 => address) public hashAlreadyUsed;
+
 
     constructor()  public {
         emit LogGameCreated(msg.sender);
@@ -54,7 +59,9 @@ contract RockPaperScissors is Pausable {
     function newGame(bytes32 _gameHash, bytes32 _move1Hash, uint256 _deltaBlocks, uint256 _betAmount) public whenNotPaused payable returns (bool started) {
         require(_gameHash != 0, 'newGame: gameHash invalid');
         require(_deltaBlocks > 0, 'newGame: deltaBlocks is not greater zero');
+        require( hashAlreadyUsed[_move1Hash] == address(0), "Hash Already used");
 
+        hashAlreadyUsed[_move1Hash] = msg.sender;
         GameData storage currGame = games[_gameHash];
         require(msg.value == _betAmount, 'newGame: invalid betAmount');
         // Data structure is freed
@@ -77,6 +84,9 @@ contract RockPaperScissors is Pausable {
     function joinGame(bytes32 _gameHash, bytes32 _moveHash) public whenNotPaused payable returns(bool joined) {
         require(_gameHash != 0, 'joinGame: gameHash invalid');
         require(!timeoutExpired(_gameHash), 'joinGame: timeout' );
+        require( hashAlreadyUsed[_moveHash] == address(0), "Hash Already used");
+
+        hashAlreadyUsed[_moveHash] = msg.sender;
 
         GameData storage currGame = games[_gameHash];
         require(msg.value == currGame.betAmount, 'joinGame: invalid betAmount');
@@ -132,7 +142,7 @@ contract RockPaperScissors is Pausable {
         return winnerId;
     }
 
-    function claimGame(bytes32 _gameHash) public whenNotPaused returns(uint256 winnerId) {
+    function cancelGame(bytes32 _gameHash) public whenNotPaused returns(uint256 winnerId) {
         require(_gameHash != 0);
         require(timeoutExpired(_gameHash));
         
@@ -144,7 +154,7 @@ contract RockPaperScissors is Pausable {
         assignRewards(currGame, winnerId);
         reset(currGame);
 
-        emit LogGameClaimed(msg.sender, _gameHash, winnerId);
+        emit LogGameCancelled(msg.sender, _gameHash, winnerId);
 
         return winnerId;
     }
