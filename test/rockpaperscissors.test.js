@@ -62,18 +62,6 @@ contract('RockPaperScissors', function(accounts) {
           }
        }
 
-       async function dumpGameData(gameHash) {
-          const data =  await instance.getGameInfo(gameHash, { from: user1, gas: MAX_GAS});
-          console.log ('price:',data[0].toString());
-          console.log ('endBlk:',data[1].toString());
-          console.log ('player1:',data[2].toString());
-          console.log ('move1Hash:',data[3].toString());
-          console.log ('move1:',data[4].toString());
-          console.log ('player2:',data[5].toString());
-          console.log ('move2Hash:',data[6].toString());
-          console.log ('move2:',data[7].toString());
-       }
-
        describe('Test methods', async function() {
             let instance;
 
@@ -150,61 +138,51 @@ contract('RockPaperScissors', function(accounts) {
                 it("is OK if called by owner", async function() {
                     const gameHash = await instance.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
                     .should.be.fulfilled;
-                    const result = await instance.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
+                    const move1Hash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                    const result = await instance.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                     .should.be.fulfilled;
                 });
 
                 it("is OK if called by any user user3", async function() {
                     const gameHash = await instance.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
                     .should.be.fulfilled;
-                    const result = await instance.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
+                    const move1Hash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                    const result = await instance.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                     .should.be.fulfilled;
                 });
 
-                it("fail if user1 is 0", async function() {
-                    const gameHash = await instance.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
-                    .should.be.fulfilled;
+                it("fail if gamehash is 0", async function() {
+                    const move1Hash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
                     await web3.eth.expectedExceptionPromise(
-                      () => { return instance.newGame(gameHash, ZERO_ADDRESS, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS}); }, 
-                      MAX_GAS);
-                });
-
-                it("fail if user2 is 0", async function() {
-                    const gameHash = await instance.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
-                    .should.be.fulfilled;
-                    await web3.eth.expectedExceptionPromise(
-                      () => { return instance.newGame(gameHash, user1, ZERO_ADDRESS, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS}); }, 
-                      MAX_GAS);
-                });
-
-                it("fail if hash is 0", async function() {
-                    await web3.eth.expectedExceptionPromise(
-                      () => { return instance.newGame(fromAscii(''), user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS}); }, 
+                      () => { return instance.newGame(fromAscii(''), move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE}); }, 
                       MAX_GAS);
                 });
 
                 it("fail if DELTA_BLOCKS is 0", async function() {
+                    const move1Hash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
                     const gameHash = await instance.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
                     await web3.eth.expectedExceptionPromise(
-                      () => { return instance.newGame(gameHash, user1, user2, 0, GAME_PRICE, { from: user1, gas: MAX_GAS}); }, 
+                      () => { return instance.newGame(gameHash, move1Hash, 0, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE}); }, 
                       MAX_GAS);
                 });
 
                 it("is OK if users play more games", async function() {
                     const gameHash = await instance.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
                     .should.be.fulfilled;
-                    let result = await instance.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
+                    const move1Hash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                    let result = await instance.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                     .should.be.fulfilled;
                     const gameHash1 = await instance.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
                     .should.be.fulfilled;
-                    result = await instance.newGame(gameHash1,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
+                    result = await instance.newGame(gameHash1, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                     .should.be.fulfilled;
                 });
 
                 it("emit event", async function() {
                     const gameHash = await instance.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
                     .should.be.fulfilled;
-                    const result = await instance.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
+                    const move1Hash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                    const result = await instance.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                     .should.be.fulfilled;
                     assert.strictEqual(result.logs.length, 1);
                     let logEvent = result.logs[0];
@@ -216,90 +194,76 @@ contract('RockPaperScissors', function(accounts) {
 
                     assert.strictEqual(logEvent.event, "LogNewGame", "LogNewGame event is wrong");
                     assert.strictEqual(logEvent.args.player1, user1, "player1 is wrong");
-                    assert.strictEqual(logEvent.args.player2, user2, "player2 is wrong");
                     assert.strictEqual(logEvent.args.gameHash, gameHash, "gameHash is wrong");
-                    assert.strictEqual(logEvent.args.gamePrice.toString(), GAME_PRICE, "price is wrong");
-                    assert.strictEqual(logEvent.args.gameEndBlock.toString(), expBlockBN.toString(), "endBlk is wrong");
+                    assert.strictEqual(logEvent.args.moveHash, move1Hash, "moveHash is wrong");
+                    assert.strictEqual(logEvent.args.betAmount.toString(), GAME_PRICE, "betAmount is wrong");
+                    assert.strictEqual(logEvent.args.expiryBlock.toString(), expBlockBN.toString(), "expiryBlock is wrong");
                 });
             });
 
 
-            describe("#playGame()", async function() {
-
+            describe("#joinGame()", async function() {
                 let gameHash;
                 beforeEach("should deploy RockPaperScissors instance",  async function() {
                     instance = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
                     gameHash = await instance.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
-                    await instance.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
+                    const move1Hash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                    await instance.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                 });
 
                 it("ok if uses correct params", async function() {
-                    const moveHash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
-                    await instance.playGame(gameHash, moveHash, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
+                    const moveHash = await instance.moveHash(user2, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS})
+                    await instance.joinGame(gameHash, moveHash, { from: user2, gas: MAX_GAS, value: GAME_PRICE})
                     .should.be.fulfilled;
                 });
 
                 it("fail if play after timeout", async function() {
-                    const moveHash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                    const moveHash = await instance.moveHash(user2, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS})
                     await jumpDeltaBlock(DELTA_BLKS+1);
                     await web3.eth.expectedExceptionPromise(
-                      () => { return instance.playGame(gameHash, moveHash, { from: user1, gas: MAX_GAS, value: GAME_PRICE}); }, 
+                      () => { return instance.joinGame(gameHash, moveHash, { from: user2, gas: MAX_GAS, value: GAME_PRICE}); }, 
                       MAX_GAS);
                 });
 
                 it("fail if zero hash", async function() {
-                    const moveHash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                    const moveHash = await instance.moveHash(user2, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS})
                     await web3.eth.expectedExceptionPromise(
-                      () => { return instance.playGame(fromAscii(''), moveHash, { from: user1, gas: MAX_GAS, value: GAME_PRICE}); }, 
+                      () => { return instance.joinGame(fromAscii(''), moveHash, { from: user2, gas: MAX_GAS, value: GAME_PRICE}); }, 
                       MAX_GAS);
                 });
 
                 it("fail if wrong hash", async function() {
-                    const localGameHash = await instance.gameHash(user2, user2, { from: user1, gas: MAX_GAS})
-                    const moveHash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                    const localGameHash = await instance.gameHash(user2, user2, { from: user2, gas: MAX_GAS})
+                    const moveHash = await instance.moveHash(user2, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS})
                     await web3.eth.expectedExceptionPromise(
-                      () => { return instance.playGame(localGameHash, moveHash, { from: user1, gas: MAX_GAS, value: GAME_PRICE}); }, 
+                      () => { return instance.joinGame(localGameHash, moveHash, { from: user2, gas: MAX_GAS, value: GAME_PRICE}); }, 
                       MAX_GAS);
                 });
 
                 it("fail if no provide ether", async function() {
-                    const moveHash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                    const moveHash = await instance.moveHash(user2, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS})
                     await web3.eth.expectedExceptionPromise(
-                      () => { return instance.playGame(gameHash, moveHash, { from: user1, gas: MAX_GAS}); }, 
-                      MAX_GAS);
-                });
-
-                it("fail if play another user", async function() {
-                    const moveHash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
-                    await web3.eth.expectedExceptionPromise(
-                      () => { return instance.playGame(gameHash, moveHash, { from: user3, gas: MAX_GAS, value: GAME_PRICE}); }, 
+                      () => { return instance.joinGame(gameHash, moveHash, { from: user2, gas: MAX_GAS}); }, 
                       MAX_GAS);
                 });
 
                 it("fail if player play two times", async function() {
-                    const moveHash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
-                    await instance.playGame(gameHash, moveHash, { from: user1, gas: MAX_GAS, value: GAME_PRICE});
+                    const moveHash = await instance.moveHash(user2, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS})
+                    await instance.joinGame(gameHash, moveHash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
                     await web3.eth.expectedExceptionPromise(
-                      () => { return instance.playGame(gameHash, moveHash, { from: user1, gas: MAX_GAS, value: GAME_PRICE}); }, 
+                      () => { return instance.joinGame(gameHash, moveHash, { from: user2, gas: MAX_GAS, value: GAME_PRICE}); }, 
                       MAX_GAS);
                 });
 
-                it("is OK if two players playes", async function() {
-                    const move1Hash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
-                    await instance.playGame(gameHash, move1Hash, { from: user1, gas: MAX_GAS, value: GAME_PRICE});
-                    const move2Hash = await instance.moveHash(user2, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS})
-                    await instance.playGame(gameHash, move2Hash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
-                });
-
                 it("emitted event", async function() {
-                    const moveHash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
-                    const result = await instance.playGame(gameHash, moveHash, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
+                    const moveHash = await instance.moveHash(user2, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS})
+                    const result = await instance.joinGame(gameHash, moveHash, { from: user2, gas: MAX_GAS, value: GAME_PRICE})
 
                     assert.strictEqual(result.logs.length, 1);
                     let logEvent = result.logs[0];
 
-                    assert.strictEqual(logEvent.event, "LogGamePlayed", "GamePlayed event is wrong");
-                    assert.strictEqual(logEvent.args.player, user1, "player is wrong");
+                    assert.strictEqual(logEvent.event, "LogGameJoined", "GamePlayed event is wrong");
+                    assert.strictEqual(logEvent.args.player, user2, "player is wrong");
                     assert.strictEqual(logEvent.args.gameHash, gameHash, "hash is wrong");
                     assert.strictEqual(logEvent.args.moveHash, moveHash, "moveHash is wrong");
                 });
@@ -311,12 +275,11 @@ contract('RockPaperScissors', function(accounts) {
                 beforeEach("should deploy RockPaperScissors instance",  async function() {
                     instance = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
                     gameHash = await instance.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
-                    await instance.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
-
                     const move1Hash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
-                    await instance.playGame(gameHash, move1Hash, { from: user1, gas: MAX_GAS, value: GAME_PRICE});
+                    await instance.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
+
                     const move2Hash = await instance.moveHash(user2, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS})
-                    await instance.playGame(gameHash, move2Hash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
+                    await instance.joinGame(gameHash, move2Hash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
                 });
 
                 it("is OK if reveal first move", async function() {
@@ -377,10 +340,9 @@ contract('RockPaperScissors', function(accounts) {
                 it("fail if both user have not yet played", async function() {
                     let instance1 = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
                     gameHash = await instance1.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
-                    await instance1.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
-
                     const move1Hash = await instance1.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
-                    await instance1.playGame(gameHash, move1Hash, { from: user1, gas: MAX_GAS, value: GAME_PRICE});
+                    await instance1.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
+
                     await web3.eth.expectedExceptionPromise(
                       () => { return instance1.revealGame(gameHash, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS}); }, 
                       MAX_GAS);
@@ -417,17 +379,16 @@ contract('RockPaperScissors', function(accounts) {
                     it(`allowed play() player1: ${move1} player2: ${move2} win: ${winner}`, async function() {
                        let instance1 = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
                        gameHash = await instance1.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
-                       await instance1.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
+                       const move1Hash = await instance1.moveHash(user1, move1, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                       await instance1.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
 
                        const oldB1 = await instance1.balances(user1);
                        const oldB2 = await instance1.balances(user2);
                        const oldB1BN = new BN(oldB1);
                        const oldB2BN = new BN(oldB2);
 
-                       const move1Hash = await instance1.moveHash(user1, move1, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
-                       await instance1.playGame(gameHash, move1Hash, { from: user1, gas: MAX_GAS, value: GAME_PRICE});
                        const move2Hash = await instance1.moveHash(user2, move2, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS})
-                       await instance1.playGame(gameHash, move2Hash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
+                       await instance1.joinGame(gameHash, move2Hash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
                        await instance1.revealGame(gameHash, move1, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS});
                        let result = await instance1.revealGame(gameHash, move2, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS});
                        assert.strictEqual(result.logs.length, 1);
@@ -457,85 +418,82 @@ contract('RockPaperScissors', function(accounts) {
                        }
                        assert.strictEqual(expB1.toString(), newB1BN.toString(), "balance player1 wrong" );
                        assert.strictEqual(expB2.toString(), newB2BN.toString(), "balance player2 wrong" );
-
-                       // verifies is structure is freed
-                       const data =  await instance.getGameInfo(gameHash, { from: user1, gas: MAX_GAS});
-                       assert.strictEqual(data[2].toString(), ZERO_ADDRESS, "player1 not re-init" );
-                       assert.strictEqual(data[5].toString(), ZERO_ADDRESS, "player2 not re-init" );
-                       assert.strictEqual(data[4].toNumber(), 0, "move1 not re-init" );
-                       assert.strictEqual(data[7].toNumber(), 0, "move2 not re-init" );
                     });
                 });
             });
 
-            describe("#abortGame()", async function() {
-                it("can abort after timeout if no user played",  async function() {
+            describe("#claimGame()", async function() {
+                it("player1 can claim after timeout if player2 doesn't played",  async function() {
                    let instance1 = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
                    const gameHash = await instance1.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
-                   await instance1.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
+                   const move1Hash = await instance1.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                   await instance1.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                    await jumpDeltaBlock(DELTA_BLKS+1);
-                   await instance1.abortGame(gameHash, { from: user1, gas: MAX_GAS})
+                   await instance1.claimGame(gameHash, { from: user1, gas: MAX_GAS})
                 });
 
                 it("fail if called before timeout",  async function() {
                    let instance1 = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
                    const gameHash = await instance1.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
-                   await instance1.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
+                   const move1Hash = await instance1.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                   await instance1.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                    await web3.eth.expectedExceptionPromise(
-                      () => { return instance1.abortGame(gameHash,{ from: user1, gas: MAX_GAS}); },
+                      () => { return instance1.claimGame(gameHash,{ from: user1, gas: MAX_GAS}); },
                       MAX_GAS);
                 });
 
-                it("emitted event in case no player",  async function() {
+                it("emitted event in case only player1 play",  async function() {
                    let instance1 = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
                    const gameHash = await instance1.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
-                   await instance1.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
+                   const move1Hash = await instance1.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                   await instance1.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                    await jumpDeltaBlock(DELTA_BLKS+1);
-                   let result = await instance1.abortGame(gameHash, { from: user1, gas: MAX_GAS})
+                   let result = await instance1.claimGame(gameHash, { from: user1, gas: MAX_GAS})
                    assert.strictEqual(result.logs.length, 1);
                    let logEvent = result.logs[0];
 
-                   assert.strictEqual(logEvent.event, "LogGameAborted", "LogGameAborted event is wrong");
-                   assert.strictEqual(logEvent.args.player1, user1, "player1 is wrong");
-                   assert.strictEqual(logEvent.args.player2, user2, "player2 is wrong");
+                   assert.strictEqual(logEvent.event, "LogGameClaimed", "LogGameClaimed event is wrong");
+                   assert.strictEqual(logEvent.args.player, user1, "player1 is wrong");
                    assert.strictEqual(logEvent.args.gameHash, gameHash, "gameHash is wrong");
                    assert.strictEqual(logEvent.args.winnerId.toNumber(), 0, "winnerId is wrong"); 
                 });
 
-                it("emitted event in case only user1 play",  async function() {
+                it("emitted event in case only player1 reveal",  async function() {
                    let instance1 = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
                    const gameHash = await instance1.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
-                   await instance1.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
                    const move1Hash = await instance1.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
-                   await instance1.playGame(gameHash, move1Hash, { from: user1, gas: MAX_GAS, value: GAME_PRICE});
+                   await instance1.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
+                   const move2Hash = await instance1.moveHash(user2, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS})
+                   await instance1.joinGame(gameHash, move2Hash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
+                   await instance1.revealGame(gameHash, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS});
                    await jumpDeltaBlock(DELTA_BLKS+1);
-                   let result = await instance1.abortGame(gameHash, { from: user1, gas: MAX_GAS})
+                   let result = await instance1.claimGame(gameHash, { from: user1, gas: MAX_GAS})
                    assert.strictEqual(result.logs.length, 1);
                    let logEvent = result.logs[0];
 
-                   assert.strictEqual(logEvent.event, "LogGameAborted", "LogGameAborted event is wrong");
-                   assert.strictEqual(logEvent.args.player1, user1, "player1 is wrong");
-                   assert.strictEqual(logEvent.args.player2, user2, "player2 is wrong");
+                   assert.strictEqual(logEvent.event, "LogGameClaimed", "LogGameClaimed event is wrong");
+                   assert.strictEqual(logEvent.args.player, user1, "player1 is wrong");
                    assert.strictEqual(logEvent.args.gameHash, gameHash, "gameHash is wrong");
-                   assert.strictEqual(logEvent.args.winnerId.toNumber(), 1, "winnerId is wrong"); 
+                   assert.strictEqual(logEvent.args.winnerId.toNumber(), 0, "winnerId is wrong"); 
                 });
 
-                it("emitted event in case only user2 play",  async function() {
+                it("emitted event in case only player2 reveal",  async function() {
                    let instance1 = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
                    const gameHash = await instance1.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
-                   await instance1.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
-                   const move2Hash = await instance1.moveHash(user2, PAPER, fromAscii(PLAYER2_PWD), { from: user1, gas: MAX_GAS})
-                   await instance1.playGame(gameHash, move2Hash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
+                   const move1Hash = await instance1.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                   await instance1.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
+                   const move2Hash = await instance1.moveHash(user2, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS})
+                   await instance1.joinGame(gameHash, move2Hash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
+                   await instance1.revealGame(gameHash, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS});
                    await jumpDeltaBlock(DELTA_BLKS+1);
-                   let result = await instance1.abortGame(gameHash, { from: user2, gas: MAX_GAS})
+                   let result = await instance1.claimGame(gameHash, { from: user2, gas: MAX_GAS})
                    assert.strictEqual(result.logs.length, 1);
                    let logEvent = result.logs[0];
 
-                   assert.strictEqual(logEvent.event, "LogGameAborted", "LogGameAborted event is wrong");
-                   assert.strictEqual(logEvent.args.player1, user1, "player1 is wrong");
-                   assert.strictEqual(logEvent.args.player2, user2, "player2 is wrong");
+                   assert.strictEqual(logEvent.event, "LogGameClaimed", "LogGameClaimed event is wrong");
+                   assert.strictEqual(logEvent.args.player, user2, "player2 is wrong");
                    assert.strictEqual(logEvent.args.gameHash, gameHash, "gameHash is wrong");
-                   assert.strictEqual(logEvent.args.winnerId.toNumber(), 2, "winnerId is wrong"); 
+                   assert.strictEqual(logEvent.args.winnerId.toNumber(), 0, "winnerId is wrong"); 
                 });
             });
 
@@ -543,11 +501,10 @@ contract('RockPaperScissors', function(accounts) {
                 it("should OK if have funds",  async function() {
                   let instance1 = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
                   const gameHash = await instance1.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
-                  await instance1.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
                   const move1Hash = await instance1.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
-                  await instance1.playGame(gameHash, move1Hash, { from: user1, gas: MAX_GAS, value: GAME_PRICE});
+                  await instance1.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                   const move2Hash = await instance1.moveHash(user2, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS})
-                  await instance1.playGame(gameHash, move2Hash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
+                  await instance1.joinGame(gameHash, move2Hash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
                   await instance1.revealGame(gameHash, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS});
                   await instance1.revealGame(gameHash, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS});
 
@@ -558,7 +515,6 @@ contract('RockPaperScissors', function(accounts) {
 
                 it("should fail if no funds",  async function() {
                   let instance1 = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
-                  const gameHash = await instance1.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
                   await web3.eth.expectedExceptionPromise(
                       () => { return instance1.withdraw({ from: user1, gas: MAX_GAS}); },
                       MAX_GAS);
@@ -567,11 +523,10 @@ contract('RockPaperScissors', function(accounts) {
                 it("verify the emitted event",  async function() {
                   let instance1 = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
                   const gameHash = await instance1.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
-                  await instance1.newGame(gameHash,user1, user2, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS})
                   const move1Hash = await instance1.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
-                  await instance1.playGame(gameHash, move1Hash, { from: user1, gas: MAX_GAS, value: GAME_PRICE});
+                  await instance1.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                   const move2Hash = await instance1.moveHash(user2, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS})
-                  await instance1.playGame(gameHash, move2Hash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
+                  await instance1.joinGame(gameHash, move2Hash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
                   await instance1.revealGame(gameHash, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS});
                   await instance1.revealGame(gameHash, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS});
 
