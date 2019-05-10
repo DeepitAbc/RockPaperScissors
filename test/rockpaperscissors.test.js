@@ -166,14 +166,27 @@ contract('RockPaperScissors', function(accounts) {
                       MAX_GAS);
                 });
 
+                it("fail if reuse the same moveHASH", async function() {
+                    let move1Hash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                    let gameHash = await instance.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
+                    instance.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE});
+
+                    move1Hash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                    gameHash = await instance.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
+                    await web3.eth.expectedExceptionPromise(
+                      () => { return instance.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE}); }, 
+                      MAX_GAS);
+                });
+
                 it("is OK if users play more games", async function() {
                     const gameHash = await instance.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
                     .should.be.fulfilled;
-                    const move1Hash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+                    let move1Hash = await instance.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
                     let result = await instance.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                     .should.be.fulfilled;
                     const gameHash1 = await instance.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
                     .should.be.fulfilled;
+                    move1Hash = await instance.moveHash(user1, PAPER, fromAscii('secret2'), { from: user1, gas: MAX_GAS})
                     result = await instance.newGame(gameHash1, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                     .should.be.fulfilled;
                 });
@@ -422,14 +435,14 @@ contract('RockPaperScissors', function(accounts) {
                 });
             });
 
-            describe("#claimGame()", async function() {
-                it("player1 can claim after timeout if player2 doesn't played",  async function() {
+            describe("#cancelGame()", async function() {
+                it("player1 can cancel after timeout if player2 doesn't played",  async function() {
                    let instance1 = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
                    const gameHash = await instance1.gameHash(user1, user2, { from: user1, gas: MAX_GAS})
                    const move1Hash = await instance1.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
                    await instance1.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                    await jumpDeltaBlock(DELTA_BLKS+1);
-                   await instance1.claimGame(gameHash, { from: user1, gas: MAX_GAS})
+                   await instance1.cancelGame(gameHash, { from: user1, gas: MAX_GAS})
                 });
 
                 it("fail if called before timeout",  async function() {
@@ -438,7 +451,7 @@ contract('RockPaperScissors', function(accounts) {
                    const move1Hash = await instance1.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
                    await instance1.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                    await web3.eth.expectedExceptionPromise(
-                      () => { return instance1.claimGame(gameHash,{ from: user1, gas: MAX_GAS}); },
+                      () => { return instance1.cancelGame(gameHash,{ from: user1, gas: MAX_GAS}); },
                       MAX_GAS);
                 });
 
@@ -448,11 +461,11 @@ contract('RockPaperScissors', function(accounts) {
                    const move1Hash = await instance1.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
                    await instance1.newGame(gameHash, move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                    await jumpDeltaBlock(DELTA_BLKS+1);
-                   let result = await instance1.claimGame(gameHash, { from: user1, gas: MAX_GAS})
+                   let result = await instance1.cancelGame(gameHash, { from: user1, gas: MAX_GAS})
                    assert.strictEqual(result.logs.length, 1);
                    let logEvent = result.logs[0];
 
-                   assert.strictEqual(logEvent.event, "LogGameClaimed", "LogGameClaimed event is wrong");
+                   assert.strictEqual(logEvent.event, "LogGameCancelled", "LogGameCancelled event is wrong");
                    assert.strictEqual(logEvent.args.player, user1, "player1 is wrong");
                    assert.strictEqual(logEvent.args.gameHash, gameHash, "gameHash is wrong");
                    assert.strictEqual(logEvent.args.winnerId.toNumber(), 0, "winnerId is wrong"); 
@@ -467,11 +480,11 @@ contract('RockPaperScissors', function(accounts) {
                    await instance1.joinGame(gameHash, move2Hash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
                    await instance1.revealGame(gameHash, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS});
                    await jumpDeltaBlock(DELTA_BLKS+1);
-                   let result = await instance1.claimGame(gameHash, { from: user1, gas: MAX_GAS})
+                   let result = await instance1.cancelGame(gameHash, { from: user1, gas: MAX_GAS})
                    assert.strictEqual(result.logs.length, 1);
                    let logEvent = result.logs[0];
 
-                   assert.strictEqual(logEvent.event, "LogGameClaimed", "LogGameClaimed event is wrong");
+                   assert.strictEqual(logEvent.event, "LogGameCancelled", "LogGameCancelled event is wrong");
                    assert.strictEqual(logEvent.args.player, user1, "player1 is wrong");
                    assert.strictEqual(logEvent.args.gameHash, gameHash, "gameHash is wrong");
                    assert.strictEqual(logEvent.args.winnerId.toNumber(), 0, "winnerId is wrong"); 
@@ -486,11 +499,11 @@ contract('RockPaperScissors', function(accounts) {
                    await instance1.joinGame(gameHash, move2Hash, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
                    await instance1.revealGame(gameHash, PAPER, fromAscii(PLAYER2_PWD), { from: user2, gas: MAX_GAS});
                    await jumpDeltaBlock(DELTA_BLKS+1);
-                   let result = await instance1.claimGame(gameHash, { from: user2, gas: MAX_GAS})
+                   let result = await instance1.cancelGame(gameHash, { from: user2, gas: MAX_GAS})
                    assert.strictEqual(result.logs.length, 1);
                    let logEvent = result.logs[0];
 
-                   assert.strictEqual(logEvent.event, "LogGameClaimed", "LogGameClaimed event is wrong");
+                   assert.strictEqual(logEvent.event, "LogGameCancelled", "LogGameCancelled event is wrong");
                    assert.strictEqual(logEvent.args.player, user2, "player2 is wrong");
                    assert.strictEqual(logEvent.args.gameHash, gameHash, "gameHash is wrong");
                    assert.strictEqual(logEvent.args.winnerId.toNumber(), 0, "winnerId is wrong"); 
