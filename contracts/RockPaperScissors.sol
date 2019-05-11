@@ -6,20 +6,22 @@ import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 /*
 ** uses case:
 ** -> Player1 starts a game with secret move (newGame)
-** -> Player2 join the game and provides secret move (playGame)
-** -> each player reveal the move (revealGame), when the second player reveal the contract assign the rewards to the winner 
-** -> each player can retrive its betAmount (withdraw)
-** -> if player2 doesn't play after expireBlock timeout the player1 can retrive the betAmount (cancelGame)
+** -> Player2 join the game (joinGame)
+** -> player2 reveal the move (revealPlayer2)
+** -> player1 reveal the move (revealPlayer1) providing move in clear and SECRET
+** -> if player2 not join OR player1 not reveal OR player2 not reveal after expireBlock timeout the user can ask to assign its the betAmount (cancelGame)
+** -> each player can retrive its betAmount on the wallet (withdraw)
 */
 contract RockPaperScissors is Pausable {
     using SafeMath for uint256;
 
     event LogGameCreated(address indexed creator);
-    event LogNewGame(address indexed player1, bytes32 indexed gameHash, bytes32 moveHash, uint256 betAmount, uint256 expiryBlock);
-    event LogGameJoined(address indexed player, bytes32 indexed gameHash, bytes32 moveHash);
-    event LogGameRevealed(address indexed player, bytes32 indexed gameHash, GameMove move, uint256 winnerId);
+    event LogNewGame(address indexed player1, bytes32 moveHash, uint256 betAmount, uint256 expiryBlock);
+    event LogGameJoined(address indexed player, bytes32 indexed gameKey);
+    event LogPlayer1Revealed(address indexed player, bytes32 gameKey, GameMove move, uint256 winnerId);
+    event LogPlayer2Revealed(address indexed player, bytes32 gameKey, GameMove move);
     event LogWithdraw(address indexed player, uint256 amount);
-    event LogGameCancelled(address indexed player, bytes32 indexed gameHash, uint256 winnerId);
+    event LogGameCancelled(address indexed player, bytes32 indexed gameKey, uint256 winnerId);
 
     enum GameMove{
       NONE,
@@ -33,20 +35,15 @@ contract RockPaperScissors is Pausable {
        uint256 expiryBlock;
        address player1;
        address player2;
-       bytes32 player1MoveHash;
-       bytes32 player2MoveHash;
        GameMove player1Move;
        GameMove player2Move;
     }
 
-    // contains the data associated to each game. Each game is indexed by gameHash
+    // contains the data associated to each game. Each game is indexed by gameKey (play1Move)
     mapping(bytes32 => GameData) public games;
 
     // balances indexed by user account
     mapping(address => uint256) public balances;
-
-    // Store the moveHash used by players */
-    mapping(bytes32 => address) public hashAlreadyUsed;
 
 
     constructor()  public {
@@ -54,114 +51,100 @@ contract RockPaperScissors is Pausable {
     }
 
     /*
-    ** start new GAME from the identified users
+    ** player1 start new GAME 
     */
-    function newGame(bytes32 _gameHash, bytes32 _move1Hash, uint256 _deltaBlocks, uint256 _betAmount) public whenNotPaused payable returns (bool started) {
-        require(_gameHash != 0, 'newGame: gameHash invalid');
+    function newGame(bytes32 _move1Hash, uint256 _deltaBlocks, uint256 _betAmount) public whenNotPaused payable returns (bool started) {
+        require(_move1Hash != bytes32(0), 'newGame: gameHash invalid');
         require(_deltaBlocks > 0, 'newGame: deltaBlocks is not greater zero');
-        require( hashAlreadyUsed[_move1Hash] == address(0), "Hash Already used");
+        require( games[_move1Hash].player1 == address(0), "newGame: hash Already used");
 
-        hashAlreadyUsed[_move1Hash] = msg.sender;
-        GameData storage currGame = games[_gameHash];
+        GameData storage currGame = games[_move1Hash];
         require(msg.value == _betAmount, 'newGame: invalid betAmount');
-        // Data structure is freed
-        require(currGame.player1 == address(0) && currGame.player2 == address(0));
 
-        currGame.betAmount = _betAmount;
         currGame.player1 = msg.sender;
-        currGame.player1MoveHash = _move1Hash;
+        currGame.betAmount = _betAmount;
         uint256 expiryBlock = block.number + _deltaBlocks;
         currGame.expiryBlock = expiryBlock;
 
-        emit LogNewGame(msg.sender, _gameHash, _move1Hash, _betAmount, expiryBlock);
-
+        emit LogNewGame(msg.sender, _move1Hash, _betAmount, expiryBlock);
         return true;
     }
 
     /*
     ** each user play the game using hash of the move
     */
-    function joinGame(bytes32 _gameHash, bytes32 _moveHash) public whenNotPaused payable returns(bool joined) {
-        require(_gameHash != 0, 'joinGame: gameHash invalid');
-        require(!timeoutExpired(_gameHash), 'joinGame: timeout' );
-        require( hashAlreadyUsed[_moveHash] == address(0), "Hash Already used");
+    function joinGame(bytes32 _gameKey) public whenNotPaused payable returns(bool joined) {
+        require(_gameKey != bytes32(0), 'joinGame: gameKey invalid');
+        require(!timeoutExpired(_gameKey), 'joinGame: timeout' );
 
-        hashAlreadyUsed[_moveHash] = msg.sender;
-
-        GameData storage currGame = games[_gameHash];
+        GameData storage currGame = games[_gameKey];
         require(msg.value == currGame.betAmount, 'joinGame: invalid betAmount');
-        address player1 = currGame.player1;
-        address player2 = currGame.player2;
-        require(player1 != address(0) && player2 == address(0), 'joinGame: invalid betAmount');
+        require(currGame.player1 != address(0) && currGame.player2 == address(0), 'joinGame: wrong key');
 
         currGame.player2 = msg.sender;
-        currGame.player2MoveHash = _moveHash;
        
-        emit LogGameJoined(msg.sender, _gameHash, _moveHash);
+        emit LogGameJoined(msg.sender, _gameKey);
         return true;
     }
 
     /*
-    ** when both user are played each user can receal each move
-    ** whe both user are moved the contract assign the winner
+    ** Reveal Player2
     */
-    function revealGame(bytes32 _gameHash, GameMove _move, bytes32 _password) public whenNotPaused returns(uint256 winnerId) {
-        require(_gameHash != 0, 'revealGame: gameHash invalid');
-        require(_move == GameMove.PAPER || _move == GameMove.SCISSORS || _move == GameMove.ROCK, 'revealGame: invalid Move');
-        require(bothUsersArePlayed(_gameHash), 'revealGame: both users have not played yet' );
-        require(!timeoutExpired(_gameHash), 'revealGame: timeout' );
+    function revealPlayer2(bytes32 _gameKey, GameMove _move) public whenNotPaused {
+        require(_gameKey != 0, 'revealPlayer2Game: gameKey invalid');
+        require(_move == GameMove.PAPER || _move == GameMove.SCISSORS || _move == GameMove.ROCK, 'revealPlayer2Game: invalid Move');
+        require(!timeoutExpired(_gameKey), 'revealPlayer2Game: timeout' );
         
-        GameData storage currGame = games[_gameHash];
-        address player1 = currGame.player1;
-        address player2 = currGame.player2;
+        GameData storage currGame = games[_gameKey];
 
-        if (msg.sender == player1)  {
-           require(currGame.player1Move == GameMove.NONE, 'revealGame: move already revealled');
-           require(currGame.player1MoveHash == moveHash(msg.sender, _move, _password), 'revealGame: move with wrong hash');
-           currGame.player1Move = _move;
-        }
-        else if (msg.sender == player2)  {
-           require(currGame.player2Move == GameMove.NONE,'revealGame: move already revealled');
-           require(currGame.player2MoveHash == moveHash(msg.sender, _move, _password), 'revealGame: move with wrong hash');
-           currGame.player2Move = _move;
-        }
-        else {
-           revert ('unexpected player');
-        }
+        require(currGame.player2 == msg.sender, 'revealPlayer2Game: msg.sender is not player2');
+        require(currGame.player2Move == GameMove.NONE,'revealPlayer2Game: move already revealled');
+        currGame.player2Move = _move;
 
-        if (!bothUsersAreRevealed(_gameHash)) {
-          winnerId = 0;
-        }
-        else {
-           winnerId = selectWinner(currGame);
-           assignRewards(currGame, winnerId);
-           reset(currGame);
-        }
-        emit LogGameRevealed(msg.sender, _gameHash, _move, winnerId);
-
-        return winnerId;
+        emit LogPlayer2Revealed(msg.sender, _gameKey, _move);
     }
 
-    function cancelGame(bytes32 _gameHash) public whenNotPaused returns(uint256 winnerId) {
-        require(_gameHash != 0);
-        require(timeoutExpired(_gameHash));
+    /*
+    ** Reveal Player1
+    */
+    function revealPlayer1(bytes32 _gameKey, GameMove _move, bytes32 _password) public whenNotPaused returns(uint256 winnerId) {
+        require(_gameKey != 0, 'revealPlayer1: gameKey invalid');
+        require(_move == GameMove.PAPER || _move == GameMove.SCISSORS || _move == GameMove.ROCK, 'revealPlayer1: invalid Move');
+        require(!timeoutExpired(_gameKey), 'revealPlayer1: timeout' );
         
-        GameData storage currGame = games[_gameHash];
-        address player1 = currGame.player1;
-        require(player1 != address(0));
+        GameData storage currGame = games[_gameKey];
+        require(currGame.player2Move != GameMove.NONE,'revealPlayer1: player2 has not yet revelled');
+        require(currGame.player1 == msg.sender, 'revealPlayer1: msg.sender is not player1');
+
+        require(currGame.player1Move == GameMove.NONE,'revealPlayer1: move already revealled');
+        require(_gameKey == moveHash(msg.sender, _move, _password), 'revealPlayer1: move with wrong hash');
+        currGame.player1Move = _move;
 
         winnerId = selectWinner(currGame);
         assignRewards(currGame, winnerId);
         reset(currGame);
 
-        emit LogGameCancelled(msg.sender, _gameHash, winnerId);
-
+        emit LogPlayer1Revealed(msg.sender, _gameKey, _move, winnerId);
         return winnerId;
+    }
+
+    function cancelGame(bytes32 _gameKey) public whenNotPaused {
+        require(_gameKey != 0, 'cancelGame: gameKey invalid');
+        require(timeoutExpired(_gameKey), 'cancelGame: not yet expired' );
+        
+        GameData storage currGame = games[_gameKey];
+        require(currGame.player1 != address(0) && currGame.betAmount != 0, 'cancelGame: wromg game or already closed');
+
+        uint256 winnerId = selectWinner(currGame);
+        assignRewards(currGame, winnerId);
+        reset(currGame);
+
+        emit LogGameCancelled(msg.sender, _gameKey, winnerId);
     }
 
     function withdraw() whenNotPaused public {
         uint256 amount = balances[msg.sender];
-        require(amount != 0);
+        require(amount != 0, 'withdraw: no funds');
 
         balances[msg.sender] = 0;
         emit LogWithdraw(msg.sender, amount);
@@ -172,8 +155,11 @@ contract RockPaperScissors is Pausable {
         GameMove move1 = currGame.player1Move;
         GameMove move2 = currGame.player2Move;
 
-        if (move1 == move2) return 0; // same move or nobody reveal (both are NONE)
-        if (move2 == GameMove.NONE || move1 == GameMove.NONE) return 0; // reveal only one player
+        if (move1 == move2) return 0; // same move or nobody reveal(both are NONE)
+        if (move1 == GameMove.NONE && move2 != GameMove.NONE) return 2; // reveal only player2 win player2
+
+        // reveal only player1 doesn't happen because before reveal player2 and later player1
+
         if (move1 == GameMove.ROCK && move2 == GameMove.SCISSORS) return 1;
         if (move1 == GameMove.SCISSORS && move2 == GameMove.ROCK) return 2;
         if (move1 == GameMove.ROCK && move2 == GameMove.PAPER) return 2;
@@ -194,32 +180,21 @@ contract RockPaperScissors is Pausable {
             balances[player2] = balances[player2].add(betAmount.mul(2));
         }
         else {
-            bytes32 move1Hash = currGame.player1MoveHash;
-            bytes32 move2Hash = currGame.player2MoveHash;
-
-            if (move1Hash != bytes32(0))  { // has played
-               balances[player1] = balances[player1].add(betAmount);
-            }
-            if (move2Hash != bytes32(0))  { // has played
+            // check on player1 is not ncessary because player1 provides always funds
+            balances[player1] = balances[player1].add(betAmount);
+            if (currGame.player2Move != GameMove.NONE)  { 
                balances[player2] = balances[player2].add(betAmount);
             }
         }
     }
 
     function reset(GameData storage selectedGame) private {
-        selectedGame.player1 = address(0);
+        // leave player1 set to verify hash reuse
         selectedGame.player2 = address(0);
-        selectedGame.player1MoveHash = 0;
-        selectedGame.player2MoveHash = 0;
         selectedGame.player1Move = GameMove.NONE;
         selectedGame.player2Move = GameMove.NONE;
         selectedGame.betAmount = 0;
         selectedGame.expiryBlock = 0;
-    }
-
-    function gameHash(address _player1, address _player2) public view returns(bytes32 secretHash) {
-        require(_player1 != address(0) && _player2 != address(0),'gameHash: invalid player');
-        return keccak256(abi.encodePacked(this, block.number, _player1, _player2));
     }
 
     function moveHash(address sender, GameMove move, bytes32 password) public view returns(bytes32 secretHash) {
@@ -227,15 +202,7 @@ contract RockPaperScissors is Pausable {
         return keccak256(abi.encodePacked(this, sender, move, password));
     }
 
-    function bothUsersArePlayed(bytes32 _gameHash) private view returns(bool done) {
-        return (games[_gameHash].player1MoveHash != bytes32(0) && games[_gameHash].player2MoveHash != bytes32(0));
-    }
-
-    function bothUsersAreRevealed(bytes32 _gameHash) private view returns(bool done) {
-        return (games[_gameHash].player1Move != GameMove.NONE && games[_gameHash].player2Move != GameMove.NONE);
-    }
-
-    function timeoutExpired(bytes32 _gameHash) private view returns(bool timedOut) {
-        return block.number > games[_gameHash].expiryBlock;
+    function timeoutExpired(bytes32 _gameKey) private view returns(bool timedOut) {
+        return block.number > games[_gameKey].expiryBlock;
     }
 }
