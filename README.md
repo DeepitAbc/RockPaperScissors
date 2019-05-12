@@ -18,13 +18,13 @@ how can you entice players to play, knowing that they may have their funding stu
 
 
 Implementation Choice:
- -> newGame:       Player1 starts a game with secret move
- -> joinGame:      Player2 join the game
- -> revealPlayer2: Player2 reveal its move in clear
- -> revealPlayer1: Player1 reveal the move providing clear move and SECRET
- -> cancelGame:    if timeout expired, if player2 not join OR player2 not reveal any user can ask to assign the betAmount(in this case one/both are assigned its beat)
- ->                if timeout expired, if player2 join AND reveal AND player1 not reveal any user can ask to assign the betAmount(the winner is player2, all the amounts is provided to player2)
- -> withdraw:      each player can ask to transfer its betAmount to its wallet
+-> newGame:       Player1 starts a game with secret move
+-> joinGame:      Player2 join the game
+-> revealPlayer2: Player2 reveal its move in clear
+-> revealPlayer1: Player1 reveal the move providing clear move and SECRET
+-> cancelGame:    if timeout expired, if player2 not join OR player2 not reveal any user can ask to assign the betAmount(in this case one/both are assigned its beat)
+->                if timeout expired, if player2 join AND reveal AND player1 not reveal any user can ask to assign the betAmount(the winner is player2, all the amounts is provided to player2)
+-> withdraw:      each player can ask to transfer its betAmount to its wallet
 
 
 Contract: DONE
