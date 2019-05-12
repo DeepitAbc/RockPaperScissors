@@ -134,7 +134,7 @@ contract RockPaperScissors is Pausable {
         require(timeoutExpired(_gameKey), 'cancelGame: not yet expired' );
         
         GameData storage currGame = games[_gameKey];
-        require(currGame.player1 != address(0) && currGame.betAmount != 0, 'cancelGame: wromg game or already closed');
+        require(currGame.player1 != address(0) && currGame.betAmount != 0, 'cancelGame: wrong game or already closed');
 
         uint256 winnerId = selectWinner(currGame);
         assignRewards(currGame, winnerId);
