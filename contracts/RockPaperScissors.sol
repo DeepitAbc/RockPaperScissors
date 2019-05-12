@@ -5,13 +5,13 @@ import "openzeppelin-solidity/contracts/lifecycle/Pausable.sol";
 
 /*
 ** uses case:
-** -> Player1 starts a game with secret move (newGame)
-** -> Player2 join the game (joinGame)
-** -> player2 reveal the move (revealPlayer2)
-** -> player1 reveal the move (revealPlayer1) providing move in clear and SECRET
-** -> if player2 not join OR player2 not reveal after expireBlock timeout any user can ask to assign the betAmount (cancelGame) (in this case one/both retrive its beat)
-** -> if player2 join AND Reveal and player1 not reveal after expireBlock any user can ask to assign the betAmount (cancelGame) (in this case the winner is player2, all the amounts is provided to player2)
-** -> each player can retrive its betAmount on the wallet (withdraw)
+** newGame:       Player1 starts a game with secret move
+** joinGame:      Player2 join the game
+** revealPlayer2: Player2 reveal its move in clear
+** revealPlayer1: Player1 reveal the move providing clear move and SECRET
+** cancelGame:    if timeout expired, if player2 not join OR player2 not reveal any user can ask to assign the betAmount(in this case one/both are assigned its beat)
+**                if timeout expired, if player2 join AND reveal AND player1 not reveal any user can ask to assign the betAmount(the winner is player2, all the amounts is provided to player2)
+** withdraw:      each player can ask to transfer its betAmount to its wallet
 */
 contract RockPaperScissors is Pausable {
     using SafeMath for uint256;
