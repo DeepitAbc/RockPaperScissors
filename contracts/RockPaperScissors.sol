@@ -183,7 +183,8 @@ contract RockPaperScissors is Pausable {
         else {
             // check on player1 is not ncessary because player1 provides always funds
             balances[player1] = balances[player1].add(betAmount);
-            if (currGame.player2Move != GameMove.NONE)  { 
+            // if player2 is joned is necessary rewards its funds
+            if (currGame.player2 != address(0))  { 
                balances[player2] = balances[player2].add(betAmount);
             }
         }
