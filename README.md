@@ -17,9 +17,8 @@ let players bet their previous winnings.
 how can you entice players to play, knowing that they may have their funding stuck in the contract if they faced an uncooperative player?
 
 
-Implemnetation Choice:
-uses case:
- -> newGame:      Player1 starts a game with secret move
+Implementation Choice:
+ -> newGame:       Player1 starts a game with secret move
  -> joinGame:      Player2 join the game
  -> revealPlayer2: Player2 reveal its move in clear
  -> revealPlayer1: Player1 reveal the move providing clear move and SECRET
