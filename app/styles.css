@@ -1,0 +1,72 @@
+
+body {
+  margin-left: 25%;
+  margin-right: 25%;
+  margin-top: 10%;
+  font-family: "Open Sans", sans-serif;
+}
+
+label {
+  display: inline-block;
+  width: 100px;
+}
+
+input {
+  width: 150;
+  padding: 5px;
+  font-size: 15px;
+}
+
+button {
+  font-size: 20px;
+  padding: 10px;
+}
+
+h1, h2 {
+  font-size: 30px;
+  display: inline-block;
+  vertical-align: middle;
+  margin-top: 0px;
+  margin-bottom: 10px;
+}
+
+div {
+  color: black;
+  font-size: 20px;
+  padding: 10px;
+}
+
+h1 {
+  color: #AAA;
+  font-size: 32px;
+}
+
+h3 {
+  font-weight: normal;
+  color: #AAA;
+  font-size: 24px;
+}
+
+.black {
+  color: black;
+}
+
+#contractBalance {
+  color: black;
+}
+
+#aliceBalance {
+  color: black;
+}
+
+#bobBalance {
+  color: black;
+}
+
+#carolBalance {
+  color: black;
+}
+
+.hint {
+  color: #666;
+}
