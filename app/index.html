@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+   <head>
+     <title>RockPaperScissors</title>
+     <meta name="author" content="Paolo Bruzzone">
+     <meta charset="utf-8">
+     <link rel="stylesheet" type="text/css" href="./styles.css">
+   </head>
+
+   <body>
+     <h1>RockPaperScissors</h1>
+     <div><span id="contractBalance">Loading...</span> ContractBalance</div>
+     <div><span id="player1Balance">Loading...</span> Player1Balance</div>
+     <div><span id="player2Balance">Loading...</span> Player2Balance</div>
+     <div><span id="winnerId">Loading...</span> winnerId</div>
+     <br>
+     <div>
+       <button id="showInfo">showInfo</button>.
+       <br>
+       <input name="player1Secret" type="text" placeholder="secret" /> 
+       <input name="expDeltaBlock" type="number" placeholder="expDeltaBlock"/> 
+       <input name="amount" type="number" placeholder="amount" /> 
+       <br>
+       <input type="radio" id="rock" name="move1Value" value="1" >
+       <label for="rock">Rock</label>
+       <input type="radio" id="paper" name="move1Value" value="2" >
+       <label for="paper">Paper</label>
+       <input type="radio" id="scissors" name="move1Value" value="3" >
+       <label for="scissors">Scissors</label>
+       <br>
+       <button id="newGame">newGame</button>.
+       <button id="joinGame">joinGame</button>.
+       <button id="revealPlayer1">revealPlayer1</button>.
+       <br>
+       <input type="radio" id="rock" name="move2Value" value="1" >
+       <label for="rock">Rock</label>
+       <input type="radio" id="paper" name="move2Value" value="2" >
+       <label for="paper">Paper</label>
+       <input type="radio" id="scissors" name="move2Value" value="3" >
+       <label for="scissors">Scissors</label>
+       <br>
+       <button id="revealPlayer2">revealPlayer2</button>.
+       <br>
+       <button id="cancelGamePlayer1" >cancel[Player1]</button>.
+       <button id="cancelGamePlayer2" >cancel[Player2]</button>.
+       <button id="withdrawPlayer1">Withdraw[Player1]</button>.
+       <button id="withdrawPlayer2">Withdraw[Player2]</button>.
+       <br>
+     </div>
+     <div><span id="status"></span> <- Last Operation Status</div>
+     <script src="js/app.js"></script>
+   </body>
+</html>
