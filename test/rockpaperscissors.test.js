@@ -394,14 +394,14 @@ contract('RockPaperScissors', function(accounts) {
 
                 const validTestSet = [
                    { move1: 1, move2: 1, winner: 0 }, // Rock vs Rock = 0
-                   { move1: 1, move2: 2, winner: 2 }, // Rock vs Paper = 2
-                   { move1: 1, move2: 3, winner: 1 }, // Rock vs Scissors = 1
-                   { move1: 2, move2: 1, winner: 1 }, // Paper vs Rock = 1
-                   { move1: 2, move2: 2, winner: 0 }, // Paper vs Paper = 0
-                   { move1: 2, move2: 3, winner: 2 }, // Paper vs Scissors = 2
-                   { move1: 3, move2: 1, winner: 2 }, // Scissors vs Rock = 2
-                   { move1: 3, move2: 2, winner: 1 }, // Scissors vs Paper = 1
-                   { move1: 3, move2: 3, winner: 0 }, // Scissors vs Scissors = 0
+                //   { move1: 1, move2: 2, winner: 2 }, // Rock vs Paper = 2
+                //   { move1: 1, move2: 3, winner: 1 }, // Rock vs Scissors = 1
+                //   { move1: 2, move2: 1, winner: 1 }, // Paper vs Rock = 1
+                //   { move1: 2, move2: 2, winner: 0 }, // Paper vs Paper = 0
+                //   { move1: 2, move2: 3, winner: 2 }, // Paper vs Scissors = 2
+                //   { move1: 3, move2: 1, winner: 2 }, // Scissors vs Rock = 2
+                //   { move1: 3, move2: 2, winner: 1 }, // Scissors vs Paper = 1
+                //   { move1: 3, move2: 3, winner: 0 }, // Scissors vs Scissors = 0
                ]
 
                 validTestSet.forEach(async function(validRecord) {
@@ -448,6 +448,10 @@ contract('RockPaperScissors', function(accounts) {
                        }
                        assert.strictEqual(expB1.toString(), newB1BN.toString(), "balance player1 wrong" );
                        assert.strictEqual(expB2.toString(), newB2BN.toString(), "balance player2 wrong" );
+                       let contractBalance = await web3.eth.getBalance(instance1.address);
+                       let expContractBalanceBN = new BN(GAME_PRICE);
+                       expContractBalanceBN = expContractBalanceBN.add(priceBN);
+                       assert.strictEqual(contractBalance.toString(), expContractBalanceBN.toString(), "contract balance not zero");
                     });
                 });
             });
@@ -460,6 +464,9 @@ contract('RockPaperScissors', function(accounts) {
                    await instance1.newGame(move1Hash, DELTA_BLKS, GAME_PRICE, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
                    await jumpDeltaBlock(DELTA_BLKS+1);
                    await instance1.cancelGame(gameKey, { from: user1, gas: MAX_GAS})
+                   await instance1.withdraw({ from: user1, gas: MAX_GAS})
+                   let contractBalance = await web3.eth.getBalance(instance1.address);
+                   assert.strictEqual(contractBalance.toString(), "0", "contract balance not zero");
                 });
 
                 it("fail if called before timeout",  async function() {
@@ -513,9 +520,12 @@ contract('RockPaperScissors', function(accounts) {
                    assert.strictEqual(logEvent.args.player, user1, "player1 is wrong");
                    assert.strictEqual(logEvent.args.gameKey, gameKey, "gameKey is wrong");
                    assert.strictEqual(logEvent.args.winnerId.toNumber(), 0, "winnerId is wrong"); 
+                   await instance1.withdraw({ from: user1, gas: MAX_GAS})
+                   let contractBalance = await web3.eth.getBalance(instance1.address);
+                   assert.strictEqual(contractBalance.toString(), "0", "contract balance not zero");
                 });
 
-                it("emitted event(ith winnerId) in case only player1 playes and player2 only join",  async function() {
+                it("emitted event(with winnerId) in case only player1 playes and player2 only join",  async function() {
                    let instance1 = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
                    const move1Hash = await instance1.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
                    let gameKey = move1Hash;
@@ -530,6 +540,10 @@ contract('RockPaperScissors', function(accounts) {
                    assert.strictEqual(logEvent.args.player, user1, "player1 is wrong");
                    assert.strictEqual(logEvent.args.gameKey, gameKey, "gameKey is wrong");
                    assert.strictEqual(logEvent.args.winnerId.toNumber(), 0, "winnerId is wrong"); 
+                   await instance1.withdraw({ from: user1, gas: MAX_GAS})
+                   await instance1.withdraw({ from: user2, gas: MAX_GAS})
+                   let contractBalance = await web3.eth.getBalance(instance.address);
+                   assert.strictEqual(contractBalance.toString(), "0", "contract balance not zero");
                 });
 
                 it("emitted event in case only player2 reveal",  async function() {
@@ -548,6 +562,9 @@ contract('RockPaperScissors', function(accounts) {
                    assert.strictEqual(logEvent.args.player, user2, "player2 is wrong");
                    assert.strictEqual(logEvent.args.gameKey, gameKey, "gameKey is wrong");
                    assert.strictEqual(logEvent.args.winnerId.toNumber(), 2, "winnerId is wrong"); 
+                   await instance1.withdraw({ from: user2, gas: MAX_GAS})
+                   let contractBalance = await web3.eth.getBalance(instance1.address);
+                   assert.strictEqual(contractBalance.toString(), "0", "contract balance not zero");
                 });
             });
 
