@@ -24,6 +24,7 @@ contract RockPaperScissors is Pausable {
     event LogWithdraw(address indexed player, uint256 amount);
     event LogGameCancelled(address indexed player, bytes32 indexed gameKey, uint256 winnerId);
 
+    // Do not change position selectWinner() function determine winner using also its value
     enum GameMove{
       NONE,
       ROCK,
@@ -163,10 +164,9 @@ contract RockPaperScissors is Pausable {
 
         if (move1 == GameMove.ROCK && move2 == GameMove.SCISSORS) return 1;
         if (move1 == GameMove.SCISSORS && move2 == GameMove.ROCK) return 2;
-        if (move1 == GameMove.ROCK && move2 == GameMove.PAPER) return 2;
-        if (move1 == GameMove.PAPER && move2 == GameMove.ROCK) return 1;
-        if (move1 == GameMove.SCISSORS && move2 == GameMove.PAPER) return 1;
-        if (move1 == GameMove.PAPER && move2 == GameMove.SCISSORS) return 2;
+
+        // Add check on MOVE value
+        return (move1 > move2) ? 1 : 2;
     }
 
     function assignRewards(GameData storage currGame, uint256 winnerId) private {
