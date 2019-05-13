@@ -33,12 +33,12 @@ contract RockPaperScissors is Pausable {
     }
 
     struct GameData {
-       uint256 betAmount;
-       uint256 expiryBlock;
        address player1;
        address player2;
        GameMove player1Move;
        GameMove player2Move;
+       uint256 betAmount;
+       uint256 expiryBlock;
     }
 
     // contains the data associated to each game. Each game is indexed by gameKey (play1Move)
@@ -170,20 +170,24 @@ contract RockPaperScissors is Pausable {
     }
 
     function assignRewards(GameData storage currGame, uint256 winnerId) private {
-        address player1 = currGame.player1;
-        address player2 = currGame.player2;
         uint256 betAmount = currGame.betAmount;
 
         if (winnerId == 1) {
+            address player1 = currGame.player1;
             balances[player1] = balances[player1].add(betAmount.mul(2));
         }
         else if (winnerId == 2) {
+            address player2 = currGame.player2;
             balances[player2] = balances[player2].add(betAmount.mul(2));
         }
         else {
+            address player1 = currGame.player1;
+            address player2 = currGame.player2;
+
             // check on player1 is not ncessary because player1 provides always funds
             balances[player1] = balances[player1].add(betAmount);
-            // if player2 is joned is necessary rewards its funds
+
+            // if player2 is joined is necessary rewards its funds evenf if not reveal
             if (currGame.player2 != address(0))  { 
                balances[player2] = balances[player2].add(betAmount);
             }
