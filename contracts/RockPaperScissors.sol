@@ -33,12 +33,12 @@ contract RockPaperScissors is Pausable {
     }
 
     struct GameData {
+       uint256 betAmount;
+       uint256 expiryBlock;
        address player1;
        address player2;
        GameMove player1Move;
        GameMove player2Move;
-       uint256 betAmount;
-       uint256 expiryBlock;
     }
 
     // contains the data associated to each game. Each game is indexed by gameKey (play1Move)
