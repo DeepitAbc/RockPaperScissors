@@ -4,25 +4,24 @@ require("file-loader?name=../index.html!../index.html");
 const Web3 = require("web3");
 const truffleContract = require("truffle-contract");
 const $ = require("jquery");
-// Not to forget our built contract
 const rockPaperScissorsjson = require("../../build/contracts/RockPaperScissors.json");
 
-// Supports Metamask, and other wallets that provide / inject 'web3'.
-if (typeof web3 !== 'undefined') {
-    // Use the Mist/wallet/Metamask provider.
-    window.web3 = new Web3(web3.currentProvider);
-} else {
-    // Your preferred fallback.
-    window.web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:9545')); 
-}
+const RockPaperScissors = truffleContract(rockPaperScissorsjson);
 
-const { sha3 } = window.web3.utils;
 const GAS = 300000; 
 
-const RockPaperScissors = truffleContract(rockPaperScissorsjson);
-RockPaperScissors.setProvider(web3.currentProvider);
-
 window.addEventListener('load', async () => {
+    // Supports Metamask, and other wallets that provide / inject 'web3'.
+    if (typeof web3 !== 'undefined') {
+        // Use the Mist/wallet/Metamask provider.
+        window.web3 = new Web3(web3.currentProvider);
+    } else {
+        // Your preferred fallback.
+        window.web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:9545')); 
+    }
+    const { sha3 } = window.web3.utils;
+    RockPaperScissors.setProvider(web3.currentProvider);
+
 
     console.log ("addEventListener called");
     const accounts = await window.web3.eth.getAccounts();
@@ -65,20 +64,19 @@ window.addEventListener('load', async () => {
 
     await showInfo();
 
+/*
+    CASO 1:
     try {
-       const eventStartGame = instance.LogNewGame({}, {fromBlock: 0, toBlock: 'latest'});
-       console.log ("eventStartGame:",eventStartGame);
-       // watch for changes
-       eventStartGame.watch((error, log) => {
-         if (error) {
-           console.log('Watched Error:', error);
-           return;
-         }
-         else {
-           console.log('Watched Log:', log.args);
-         }
-      });
-    } catch (error) {
+      // returns TypeError: "instance.LogNewGame(...).watch is not a function"
+      instance.LogNewGame({}, 'latest').watch((error, log) => {
+      if (!error) {
+        console.log('Watched Log:', log.args);
+      } else {
+        console.log('Watched Error:', error);
+      }
+    });
+    }
+    catch (error) {
        $("#status").html("error to watch event");
        $("#contractBalance").html("NA");
        $("#player1Balance").html("NA");
@@ -87,6 +85,69 @@ window.addEventListener('load', async () => {
        console.log ("exception:",error);
        return;
     };
+*/
+
+
+/*
+    CASO 2:
+
+    // TypeError: "allEvents.watch is not a function"
+    try {
+       const blockNumber = await window.web3.eth.getBlockNumber();
+       const allEvents = instance.allEvents({fromBlock: blockNumber, toBlock: 'latest'});
+       allEvents.watch((error, log) => {
+         if (error) {
+           console.log('Watched Error:', error);
+           return;
+         }
+         else {
+           console.log('Watched Log:', log.args.event);
+           console.log('Watched Log:', log.args.moveHash);
+           console.log('Watched Log:', log.args.player1);
+         }
+      });
+    } 
+    catch (error) {
+       $("#status").html("error to watch event");
+       $("#contractBalance").html("NA");
+       $("#player1Balance").html("NA");
+       $("#player2Balance").html("NA");
+       $("#Winner").html("NONE");
+       console.log ("exception:",error);
+       return;
+    };
+*/
+
+/*
+    CASO 3:
+*/
+
+    // TypeError: "allEvents.watch is not a function"
+    try {
+       const blockNumber = await window.web3.eth.getBlockNumber();
+       const allEvents = await instance.allEvents({fromBlock: blockNumber, toBlock: 'latest'});
+       allEvents.watch((error, log) => {
+         if (error) {
+           console.log('Watched Error:', error);
+           return;
+         }
+         else {
+           console.log('Watched Log:', log.args.event);
+           console.log('Watched Log:', log.args.moveHash);
+           console.log('Watched Log:', log.args.player1);
+         }
+      });
+    } 
+    catch (error) {
+       $("#status").html("error to watch event");
+       $("#contractBalance").html("NA");
+       $("#player1Balance").html("NA");
+       $("#player2Balance").html("NA");
+       $("#Winner").html("NONE");
+       console.log ("exception:",error);
+       return;
+    };
+
 
     $("#showInfo").click(async function(){
       console.log ("the showInfo was clicked.");
