@@ -1,4 +1,5 @@
 
+
 require("file-loader?name=../index.html!../index.html");
 
 const Web3 = require("web3");
@@ -11,6 +12,8 @@ const RockPaperScissors = truffleContract(rockPaperScissorsjson);
 const GAS = 300000; 
 
 window.addEventListener('load', async () => {
+    let gameKeyList = [];
+
     // Supports Metamask, and other wallets that provide / inject 'web3'.
     if (typeof web3 !== 'undefined') {
         // Use the Mist/wallet/Metamask provider.
@@ -22,6 +25,13 @@ window.addEventListener('load', async () => {
     const { sha3 } = window.web3.utils;
     RockPaperScissors.setProvider(web3.currentProvider);
 
+    if (typeof RockPaperScissors.currentProvider.sendAsync !== 'function') {
+      RockPaperScissors.currentProvider.sendAsync = function() {
+        return RockPaperScissors.currentProvider.send.apply(
+            RockPaperScissors.currentProvider, arguments
+        );
+      };
+    };
 
     console.log ("addEventListener called");
     const accounts = await window.web3.eth.getAccounts();
@@ -37,9 +47,6 @@ window.addEventListener('load', async () => {
     console.log ("Assign accounts");
     let player1Account = accounts[0];
     let player2Account = accounts[1];
-    let gameKey;
-    let move1;
-    let player1Secret;
     let winnerId=0;
     let deltaBlocks;
 
@@ -64,13 +71,13 @@ window.addEventListener('load', async () => {
 
     await showInfo();
 
-/*
-    CASO 1:
+    // Register on newGameLog
     try {
-      // returns TypeError: "instance.LogNewGame(...).watch is not a function"
       instance.LogNewGame({}, 'latest').watch((error, log) => {
       if (!error) {
-        console.log('Watched Log:', log.args);
+       console.log('Watched Log: player1', log.args.player1);
+       console.log('Watched Log: hash', log.args.moveHash);
+       addElement(log.args.moveHash);
       } else {
         console.log('Watched Error:', error);
       }
@@ -85,59 +92,24 @@ window.addEventListener('load', async () => {
        console.log ("exception:",error);
        return;
     };
-*/
 
 
-/*
-    CASO 2:
-
-    // TypeError: "allEvents.watch is not a function"
+    // Register on LogPlayer1Revealed
     try {
-       const blockNumber = await window.web3.eth.getBlockNumber();
-       const allEvents = instance.allEvents({fromBlock: blockNumber, toBlock: 'latest'});
-       allEvents.watch((error, log) => {
-         if (error) {
-           console.log('Watched Error:', error);
-           return;
-         }
-         else {
-           console.log('Watched Log:', log.args.event);
-           console.log('Watched Log:', log.args.moveHash);
-           console.log('Watched Log:', log.args.player1);
-         }
-      });
-    } 
-    catch (error) {
-       $("#status").html("error to watch event");
-       $("#contractBalance").html("NA");
-       $("#player1Balance").html("NA");
-       $("#player2Balance").html("NA");
-       $("#Winner").html("NONE");
-       console.log ("exception:",error);
-       return;
-    };
-*/
-
-/*
-    CASO 3:
-*/
-
-    // TypeError: "allEvents.watch is not a function"
-    try {
-       const blockNumber = await window.web3.eth.getBlockNumber();
-       const allEvents = await instance.allEvents({fromBlock: blockNumber, toBlock: 'latest'});
-       allEvents.watch((error, log) => {
-         if (error) {
-           console.log('Watched Error:', error);
-           return;
-         }
-         else {
-           console.log('Watched Log:', log.args.event);
-           console.log('Watched Log:', log.args.moveHash);
-           console.log('Watched Log:', log.args.player1);
-         }
-      });
-    } 
+      instance.LogPlayer1Revealed({}, 'latest').watch((error, log) => {
+      if (!error) {
+        console.log('Watched Log: sender', log.args.player);
+        console.log('Watched Log: hash', log.args.gameKey);
+        console.log('Watched Log: move', log.args.move);
+        winnerId = log.args.winnerId.toNumber();
+        console.log('Watched Log: winnerId', winnerId);
+        $("#winnerId").html(winnerId.toString(10))
+        removeElement(log.args.gameKey);
+      } else {
+        console.log('Watched Error:', error);
+      }
+    });
+    }
     catch (error) {
        $("#status").html("error to watch event");
        $("#contractBalance").html("NA");
@@ -148,6 +120,15 @@ window.addEventListener('load', async () => {
        return;
     };
 
+    $("#showInfo").click(async function(){
+      console.log ("the showInfo was clicked.");
+      await showInfo();
+    }); 
+
+    $("#newGame").click(async function(){
+      console.log ("the newGame was clicked.");
+      await newGame();
+    }); 
 
     $("#showInfo").click(async function(){
       console.log ("the showInfo was clicked.");
@@ -194,6 +175,38 @@ window.addEventListener('load', async () => {
       await withdraw(player2Account);
     }); 
 
+    function addElement(key) {
+      let x = gameKeyList.unshift(key);
+      console.log ("unshipft returns:",x);
+      $("#gameKeyList").append(
+                          '<li id="' +
+                          key +
+                          '" >' +
+                          key +
+                          '</li>')
+      dumpList();
+    }  
+
+    function removeElement(key) {
+       // Find and remove item from an array
+       var i = gameKeyList.indexOf(key);
+       if(i != -1) {
+          gameKeyList.splice(i, 1);
+          let keyStr = '#' + key
+          console.log ("html remove:",keyStr);
+          $(keyStr).remove()
+      }
+      dumpList();
+    }
+
+    function dumpList() {
+       let i;
+
+       for (i = 0; i < gameKeyList.length; i++) {
+          console.log ('[',i,']=',gameKeyList[i]);
+       }
+    }
+
     async function jumpDeltaBlock(deltaBlock) {
        let i;
        for (i = 0; i < deltaBlock; i++)  {
@@ -235,8 +248,8 @@ window.addEventListener('load', async () => {
        try {
            winnerId=0;
            $("#winnerId").html("NA")
-           move1 = $('input:radio[name=move1Value]:checked').val()
-           player1Secret = $("input[name='player1Secret']").val();
+           let move1 = $('input:radio[name=move1Value]:checked').val()
+           let player1Secret = $("input[name='player1Secret']").val();
            deltaBlocks = $("input[name='expDeltaBlock']").val();
            let amount = $("input[name='amount']").val();
        
@@ -249,15 +262,17 @@ window.addEventListener('load', async () => {
            let move1Hash = await instance.moveHash(player1Account, move1, sha3(player1Secret));
 
            console.log('move1Hash:',move1Hash);
-           gameKey = move1Hash;
 
            await instance.newGame.call(move1Hash, deltaBlocks, amount,
                 { from: player1Account, gas: GAS, value: amount});
 
            let txObj = await instance.newGame(move1Hash, deltaBlocks, amount,
                 { from: player1Account, gas: GAS, value: amount})
+/*
+
                 .on("transactionHash",
                     txHash => $("#status").html("Transaction on the way " + txHash))
+*/
 
            const receipt = txObj.receipt;
            console.log("got receipt", receipt);
@@ -284,6 +299,7 @@ window.addEventListener('load', async () => {
 
        try {
            let amount = $("input[name='amount']").val();
+           let gameKey = $("input[name='gameKey']").val();
        
            console.log ("amount: ", amount);
 
@@ -292,8 +308,10 @@ window.addEventListener('load', async () => {
 
            let txObj = await instance.joinGame(gameKey, 
                 { from: player2Account, gas: GAS, value: amount})
+/*
                 .on("transactionHash",
                     txHash => $("#status").html("Transaction on the way " + txHash))
+*/
 
            const receipt = txObj.receipt;
            console.log("got receipt", receipt);
@@ -318,12 +336,17 @@ window.addEventListener('load', async () => {
 
     async function revealPlayer1() {
        try {
+           let gameKey = $("input[name='gameKey']").val();
+           let move1 = $('input:radio[name=move1Value]:checked').val()
+           let player1Secret = $("input[name='player1Secret']").val();
            await instance.revealPlayer1.call(gameKey, move1, sha3(player1Secret),
                 { from: player1Account, gas: GAS});
            let txObj = await instance.revealPlayer1(gameKey, move1, sha3(player1Secret),
                 { from: player1Account, gas: GAS})
+/*
                 .on("transactionHash",
                     txHash => $("#status").html("Transaction on the way " + txHash))
+*/
 
            const receipt = txObj.receipt;
            console.log("got receipt", receipt);
@@ -336,11 +359,7 @@ window.addEventListener('load', async () => {
               console.error(receipt);
               $("#status").html("There was an error in the tx execution, missing expected event");
            } else {
-              console.log(receipt.logs[0]);
-              winnerId = receipt.logs[0].args.winnerId;
-              console.log("WinnerId",winnerId.toString());
-              $("#winnerId").html(winnerId.toString(10))
-              $("#status").html("Transfer executed");
+                console.log(receipt);
          }
        }
        catch(error) {
@@ -351,6 +370,7 @@ window.addEventListener('load', async () => {
 
     async function revealPlayer2() {
        try {
+           let gameKey = $("input[name='gameKey']").val();
            let move2 = $('input:radio[name=move2Value]:checked').val()
            console.log ("move2:",move2);
 
@@ -358,8 +378,10 @@ window.addEventListener('load', async () => {
                 { from: player2Account, gas: GAS});
            let txObj = await instance.revealPlayer2(gameKey, move2,
                 { from: player2Account, gas: GAS})
+/*
                 .on("transactionHash",
                     txHash => $("#status").html("Transaction on the way " + txHash))
+*/
 
            const receipt = txObj.receipt;
            console.log("got receipt", receipt);
@@ -386,8 +408,11 @@ window.addEventListener('load', async () => {
        try {
            await instance.withdraw.call({ from: address, gas: GAS});
            let txObj = await instance.withdraw({ from: address, gas: GAS})
+/*
+
                 .on("transactionHash",
                     txHash => $("#status").html("Transaction on the way " + txHash))
+*/
 
            const receipt = txObj.receipt;
            console.log("got receipt", receipt);
@@ -413,6 +438,7 @@ window.addEventListener('load', async () => {
 
     async function cancelGame(account) {
        try {
+           let gameKey = $("input[name='gameKey']").val();
            let blockNumber = await window.web3.eth.getBlockNumber();
            console.log("currentBlock: ",blockNumber);
            await jumpDeltaBlock(deltaBlocks+1);
@@ -423,8 +449,12 @@ window.addEventListener('load', async () => {
            await instance.cancelGame.call(gameKey, { from: account, gas: GAS});
 
            let txObj = await instance.cancelGame(gameKey, { from: account, gas: GAS})
+/*
                 .on("transactionHash",
                     txHash => $("#status").html("Transaction on the way " + txHash))
+*/
+
+
 
            const receipt = txObj.receipt;
            console.log("got receipt", receipt);
