@@ -8,16 +8,20 @@
    </head>
 
    <body>
-     <h1>RockPaperScissors</h1>
+     <h2>RockPaperScissors</h1>
      <div><span id="contractBalance">Loading...</span> ContractBalance</div>
      <div><span id="player1Balance">Loading...</span> Player1Balance</div>
      <div><span id="player2Balance">Loading...</span> Player2Balance</div>
      <div><span id="winnerId">Loading...</span> winnerId</div>
      <br>
+     <h2>gameKeyList:</h1>
+     <div id="gameKeyList">
+     </div>
      <div>
        <button id="showInfo">showInfo</button>.
        <br>
-       <input name="player1Secret" type="text" placeholder="secret" /> 
+       <input name="gameKey" type="text" placeholder="gameKey" size=50 /> 
+       <input name="player1Secret" type="text" placeholder="secret" size=10 /> 
        <input name="expDeltaBlock" type="number" placeholder="expDeltaBlock"/> 
        <input name="amount" type="number" placeholder="amount" /> 
        <br>
