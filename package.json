@@ -1,7 +1,7 @@
 {
-  "name": "remittance",
+  "name": "RockPapaperScissors",
   "version": "1.0.0",
-  "description": "Smart contracts for Remittance on Ethereum blockchain",
+  "description": "Smart contracts for RockPapaerScissors on Ethereum blockchain",
   "main": "index.js",
   "directories": {
     "test": "test"
@@ -16,9 +16,10 @@
     "bn-chai": "^1.0.1",
     "css-loader": "^2.1.1",
     "jquery": "^3.4.0",
+    "make": "^0.8.1",
     "openzeppelin-solidity": "2.1.1",
     "style-loader": "^0.23.1",
-    "truffle-contract": "4.0.12",
+    "truffle-contract": "3.0.7",
     "web3": "1.0.0-beta.37"
   },
   "devDependencies": {
