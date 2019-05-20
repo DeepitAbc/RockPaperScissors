@@ -30,3 +30,9 @@ Implementation Choice:
 Contract: DONE
 Test: DONE
 UI: DONE
+
+To create webpack:
+./node_modules/.bin/webpack-cli --mode development
+To run webserver:
+php -S 0.0.0.0:8000 -t ./build/app
+
