@@ -263,10 +263,10 @@ window.addEventListener('load', async () => {
 
            console.log('move1Hash:',move1Hash);
 
-           await instance.newGame.call(move1Hash, deltaBlocks, amount,
+           await instance.newGame.call(move1Hash, deltaBlocks, 
                 { from: player1Account, gas: GAS, value: amount});
 
-           let txObj = await instance.newGame(move1Hash, deltaBlocks, amount,
+           let txObj = await instance.newGame(move1Hash, deltaBlocks, 
                 { from: player1Account, gas: GAS, value: amount})
 /*
 
