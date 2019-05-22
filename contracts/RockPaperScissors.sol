@@ -65,7 +65,7 @@ contract RockPaperScissors is Pausable {
         currGame.player1 = msg.sender;
         currGame.betAmount = msg.value;
         currGame.deltaBlocks = _deltaBlocks;
-        uint256 expiryBlock = _deltaBlocks.add(block.number);
+        uint256 expiryBlock = block.number.add(_deltaBlocks);
         currGame.expiryBlock = expiryBlock;
 
         emit LogNewGame(msg.sender, _move1Hash, msg.value, expiryBlock);
@@ -84,7 +84,7 @@ contract RockPaperScissors is Pausable {
         require(currGame.player1 != address(0) && currGame.player2 == address(0), 'joinGame: wrong key');
 
         currGame.player2 = msg.sender;
-        uint256 expiryBlock = currGame.deltaBlocks.add(block.number);
+        uint256 expiryBlock = block.number.add(currGame.deltaBlocks);
         currGame.expiryBlock = expiryBlock;
        
         emit LogGameJoined(msg.sender, _gameKey, expiryBlock);
@@ -104,7 +104,7 @@ contract RockPaperScissors is Pausable {
         require(currGame.player2 == msg.sender, 'revealPlayer2Game: msg.sender is not player2');
         require(currGame.player2Move == GameMove.NONE,'revealPlayer2Game: move already revealled');
         currGame.player2Move = _move;
-        uint256 expiryBlock = currGame.deltaBlocks.add(block.number);
+        uint256 expiryBlock = block.number.add(currGame.deltaBlocks);
         currGame.expiryBlock = expiryBlock;
 
         emit LogPlayer2Revealed(msg.sender, _gameKey, _move, expiryBlock);
