@@ -18,7 +18,7 @@ contract RockPaperScissors is Pausable {
 
     event LogGameCreated(address indexed creator);
     event LogNewGame(address indexed player1, bytes32 moveHash, uint256 betAmount, uint256 expiryBlock);
-    event LogGameJoined(address indexed player, bytes32 indexed gameKey);
+    event LogGameJoined(address indexed player, bytes32 indexed gameKey, uint256 expiryBlock);
     event LogPlayer1Revealed(address indexed player, bytes32 gameKey, GameMove move, uint256 winnerId);
     event LogPlayer2Revealed(address indexed player, bytes32 gameKey, GameMove move, uint256 expiryBlock);
     event LogWithdraw(address indexed player, uint256 amount);
@@ -65,7 +65,7 @@ contract RockPaperScissors is Pausable {
         currGame.player1 = msg.sender;
         currGame.betAmount = msg.value;
         currGame.deltaBlocks = _deltaBlocks;
-        uint256 expiryBlock = block.number + _deltaBlocks;
+        uint256 expiryBlock = _deltaBlocks.add(block.number);
         currGame.expiryBlock = expiryBlock;
 
         emit LogNewGame(msg.sender, _move1Hash, msg.value, expiryBlock);
@@ -84,8 +84,10 @@ contract RockPaperScissors is Pausable {
         require(currGame.player1 != address(0) && currGame.player2 == address(0), 'joinGame: wrong key');
 
         currGame.player2 = msg.sender;
+        uint256 expiryBlock = currGame.deltaBlocks.add(block.number);
+        currGame.expiryBlock = expiryBlock;
        
-        emit LogGameJoined(msg.sender, _gameKey);
+        emit LogGameJoined(msg.sender, _gameKey, expiryBlock);
         return true;
     }
 
@@ -102,7 +104,7 @@ contract RockPaperScissors is Pausable {
         require(currGame.player2 == msg.sender, 'revealPlayer2Game: msg.sender is not player2');
         require(currGame.player2Move == GameMove.NONE,'revealPlayer2Game: move already revealled');
         currGame.player2Move = _move;
-        uint256 expiryBlock = block.number + currGame.deltaBlocks;
+        uint256 expiryBlock = currGame.deltaBlocks.add(block.number);
         currGame.expiryBlock = expiryBlock;
 
         emit LogPlayer2Revealed(msg.sender, _gameKey, _move, expiryBlock);
@@ -202,6 +204,7 @@ contract RockPaperScissors is Pausable {
         selectedGame.player2Move = GameMove.NONE;
         selectedGame.betAmount = 0;
         selectedGame.expiryBlock = 0;
+        selectedGame.deltaBlocks = 0;
     }
 
     function moveHash(address sender, GameMove move, bytes32 password) public view returns(bytes32 secretHash) {
