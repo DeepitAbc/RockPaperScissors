@@ -261,9 +261,16 @@ contract('RockPaperScissors', function(accounts) {
           assert.strictEqual(result.logs.length, 1);
           let logEvent = result.logs[0];
 
+          let expBlock = await web3.eth.getBlockNumber();
+          let expBlockBN = new BN(expBlock);
+          let deltaBlockBN = new BN(DELTA_BLKS);
+          expBlockBN = expBlockBN.add(deltaBlockBN);
+
           assert.strictEqual(logEvent.event, "LogGameJoined", "GamePlayed event is wrong");
           assert.strictEqual(logEvent.args.player, user2, "player2 is wrong");
           assert.strictEqual(logEvent.args.gameKey, gameKey, "hash is wrong");
+          assert.strictEqual(logEvent.args.gameKey, gameKey, "hash is wrong");
+          assert.strictEqual(logEvent.args.expiryBlock.toString(), expBlockBN.toString(), "expiryBlock is wrong");
         });
       });
 
@@ -280,6 +287,22 @@ contract('RockPaperScissors', function(accounts) {
 
         it("is OK if reveal first move", async function() {
             await instance.revealPlayer2(gameKey, PAPER, { from: user2, gas: MAX_GAS}); 
+        });
+
+        it("is OK even if player2 join near timeout", async function() {
+            let instance1 = await RockPaperScissors.new({ from: owner , gas: MAX_GAS})
+            const move1Hash = await instance1.moveHash(user1, PAPER, fromAscii(PLAYER1_PWD), { from: user1, gas: MAX_GAS})
+
+            await instance1.newGame(move1Hash, DELTA_BLKS, { from: user1, gas: MAX_GAS, value: GAME_PRICE})
+            gameKey = move1Hash;
+
+            await jumpDeltaBlock(DELTA_BLKS-2);
+
+            await instance1.joinGame(gameKey, { from: user2, gas: MAX_GAS, value: GAME_PRICE});
+
+            await jumpDeltaBlock(DELTA_BLKS-2);
+
+            await instance1.revealPlayer2(gameKey, PAPER, { from: user2, gas: MAX_GAS}); 
         });
 
         it("fail after timeout", async function() {
